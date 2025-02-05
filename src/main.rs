@@ -61,8 +61,8 @@ struct CargoChecker {
 }
 
 impl CargoChecker {
-    fn cargo_check_ok(&self) -> bool {
-        self.cmds.iter().all(|(exec, args)| {
+    fn any_check_failed(&self) -> bool {
+        self.cmds.iter().any(|(exec, args)| {
             !std::process::Command::new(exec)
                 .args(args)
                 .stderr(Stdio::null())
@@ -76,7 +76,7 @@ impl CargoChecker {
 fn main() -> Result<()> {
     let opts = Opts::parse();
     let checker = opts.create_cargo_checker();
-    if !checker.cargo_check_ok() {
+    if checker.any_check_failed() {
         bail!("Project must compile properly before pickaboo deps check!");
     }
     let dot = PathBuf::from(".");
@@ -113,7 +113,7 @@ fn main() -> Result<()> {
                         .expect("Failed to open to write")
                         .write_all(edit.to_string().as_bytes())?;
 
-                    if checker.cargo_check_ok() {
+                    if checker.any_check_failed() {
                         *edit["dependencies"].as_table_mut().unwrap() = orig;
                         eprintln!("  > Required: {:?}", key)
                     } else {
